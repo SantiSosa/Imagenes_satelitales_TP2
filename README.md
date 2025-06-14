@@ -5,7 +5,7 @@ Este repositorio proporciona un script en Python para realizar un análisis expl
 
 ### Requisitos
 Para ejecutar el script, es necesario instalar los siguientes paquetes de Python:
-- opencv-python
+- opencv
 - matplotlib
 - numpy
 
