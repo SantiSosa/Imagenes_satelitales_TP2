@@ -1,0 +1,406 @@
+
+Trabajo Práctico 2 – Punto 3: Detección de Bordes por Gradiente (Prewitt y Sobel)
+==============================================================================
+
+1. ¿Qué es detectar bordes?
+---------------------------
+La detección de bordes consiste en encontrar los píxeles de la imagen donde hay discontinuidades significativas en 
+la intensidad (cambio brusco de color o nivel de gris). 
+Estos píxeles forman parte de los contornos de objetos o estructuras dentro de la escena.
+
+¿Para qué se usa?
+- Para extraer características destacadas.
+- Para reducir la información a curvas o líneas relevantes.
+- Para facilitar la interpretación automática de imágenes (segmentación, clasificación, etc.).
+- Convertir una imagen 2D en un conjunto de curvas.
+- Obtener una representación más compacta que los pixeles.
+
+2. Bordes y Gradiente
+---------------------
+Un borde se define como una zona de alto gradiente, es decir, donde la intensidad de la imagen varía rápidamente.  
+Matemáticamente, el gradiente ∇I de una imagen I(x, y) se define como:
+
+    ∇I = (∂I/∂x, ∂I/∂y)
+
+Y su magnitud es:
+
+    |∇I| = sqrt(Ix² + Iy²)
+
+Esto se calcula para cada píxel de la imagen.
+
+Nota: El gradiente ∇I representa la primera derivada de la imagen en cada dirección. 
+Es decir, mide el cambio de intensidad en el eje x e y, y su magnitud nos indica qué tan fuerte es ese cambio. 
+Los métodos como Prewitt y Sobel se basan en esta primera derivada para detectar bordes.
+
+3. ¿Qué son las máscaras (kernels)?
+-----------------------------------
+Las máscaras o kernels son pequeñas matrices (generalmente de 3x3) que se usan para recorrer la imagen 
+y aplicar una operación de convulsión sobre cada píxel. La máscara se centra en un píxel y multiplica 
+cada valor de su vecindad por los pesos definidos en la matriz. El resultado se suma y reemplaza 
+el valor original del píxel central.
+
+Sirven para realizar operaciones como detección de bordes, suavizado, realce, entre otros.
+
+4. ¿Por qué se usan máscaras de 3x3?
+------------------------------------
+Las máscaras de 3x3 son el tamaño mínimo que permite capturar información direccional (horizontal, vertical y diagonal) 
+alrededor de un píxel central. Este tamaño permite un buen equilibrio entre sensibilidad, precisión y eficiencia computacional. 
+También son rápidas de aplicar y suficientes para muchos filtros clásicos, como Sobel y Prewitt.
+
+5. ¿Por qué las máscaras tienen valores como 1, 0, -1?
+-------------------------------------------------------
+Los valores de las máscaras definen qué tipo de cambio se busca detectar:
+
+- Los valores 1 y -1 permiten detectar diferencias (gradientes) entre lados opuestos de la vecindad.
+- El 0 en el centro indica que ese píxel no contribuye directamente en la dirección del cambio buscado.
+- Así, por ejemplo, en la dirección horizontal, una máscara como:
+
+      [[ 1,  0, -1],
+       [ 1,  0, -1],
+       [ 1,  0, -1]]
+
+  buscará detectar cambios de izquierda a derecha, sumando intensidades a la izquierda y restando a la derecha.
+
+Estas configuraciones permiten calcular aproximaciones discretas de derivadas en distintas direcciones.
+
+6. Operador Prewitt
+-------------------
+- Usa una máscara 3x3 con pesos constantes.
+- Aproxima derivadas en X e Y.
+- Ventaja: implementación simple.
+
+Máscaras:
+
+    Prewitt X = [[ 1,  0, -1],
+                 [ 1,  0, -1],
+                 [ 1,  0, -1]]
+
+    Prewitt Y = [[ 1,  1,  1],
+                 [ 0,  0,  0],
+                 [-1, -1, -1]]
+
+7. Operador Sobel
+-----------------
+- También usa una máscara 3x3, pero da mayor peso a los píxeles centrales.
+- Esto mejora su desempeño en presencia de ruido.
+- Se considera una mejora respecto a Prewitt.
+
+Máscaras:
+
+    Sobel X = [[ 1,  0, -1],
+               [ 2,  0, -2],
+               [ 1,  0, -1]]
+
+    Sobel Y = [[ 1,  2,  1],
+               [ 0,  0,  0],
+               [-1, -2, -1]]
+
+En la primera entrega utilicé addWeighted para combinar las derivadas de Sobel y obtener una visualización balanceada 
+de los bordes.Pero en esta versión decidí usar np.hypot(gx, gy) porque da la magnitud real del gradiente, 
+que es más precisa matemáticamente y útil para el conteo de bordes.”
+
+
+8. Cálculo final del borde
+--------------------------
+Luego de aplicar los filtros en X e Y, se calcula:
+
+    G = sqrt(Gx² + Gy²)
+
+También puede usarse la suma ponderada de ambos para visualizar el resultado.
+
+¿Qué se hace con el valor del gradiente en cada píxel?
+----------------------------------------------------------
+Una vez que se calcula la magnitud del gradiente en un píxel:
+
+    |∇I(x, y)| = sqrt(Gx² + Gy²)
+
+ese valor se guarda en una nueva imagen que representa la presencia de bordes.
+
+Esta nueva imagen se denomina imagen del gradiente o imagen de bordes.
+
+¿Qué representa esta imagen?
+Cada píxel en la imagen resultante contiene un valor que indica:
+
+- Qué tan fuerte es el borde en esa posición.
+- Cuánto cambia la intensidad en la vecindad del píxel.
+
+¿Cómo se interpreta visualmente?
+
+- Los valores altos (bordes fuertes) se ven claros o blancos.
+- Los valores bajos (sin borde) se ven oscuros o negros.
+
+¿Qué se hace con esta imagen?
+
+1. Se puede visualizar directamente para observar los contornos detectados.
+2. Se puede binarizar (aplicando un umbral) para destacar solo los bordes más fuertes.
+3. Se puede contar cuántos píxeles superan el umbral para hacer un análisis cuantitativo.
+
+Esta imagen del gradiente es el resultado final del proceso de detección de bordes, y resume la fuerza de cambio de intensidad en cada punto de la imagen original.
+
+
+9. Comparación entre Prewitt y Sobel
+------------------------------------
+| Criterio            | Prewitt            | Sobel                    |
+|---------------------|--------------------|--------------------------|
+| Máscara             | Pesos uniformes    | Mayor peso al centro     |
+| Ruido               | Más sensible       | Más robusto              |
+| Precisión           | Menor              | Mejor detección de bordes|
+| Costo computacional | Ligero             | Ligero también           |
+
+10. Consideraciones prácticas
+-----------------------------
+- Si la imagen tiene bajo contraste, el resultado será pobre (poco visible).
+- Si tiene ruido, conviene aplicar un filtro de suavizado previo (ej. Gaussiano).
+- Es buena práctica analizar el histograma antes y después para ver contraste.
+
+11. El Histograma de una Imagen
+-------------------------------
+Un histograma de imagen es una representación gráfica de la distribución de los niveles de intensidad 
+(valores de gris) en una imagen digital. Muestra cuántos píxeles tienen cada valor de intensidad, desde 0 (negro) hasta 255 (blanco).
+
+¿Para qué sirve?
+- Permite analizar el contraste de una imagen.
+- Ayuda a detectar si la imagen está sobreexpuesta o subexpuesta.
+- Es útil para decidir si conviene aplicar filtros o ecualización de histograma.
+- En la detección de bordes, un bajo contraste puede dificultar los resultados, por lo que observar el histograma es una herramienta clave.
+
+¿Con qué imagen se calcula?
+El histograma se calcula sobre la imagen en escala de grises, ya que es necesario contar los niveles de intensidad únicos. 
+En imágenes en color (RGB o BGR), habría que calcular un histograma por canal, lo cual no es útil para los operadores de gradiente 
+como Prewitt y Sobel, que se aplican sobre imágenes grises.
+
+
+12. Ecualización del Histograma
+----------------------------------
+
+La ecualización del histograma es una técnica de procesamiento de imágenes que mejora el contraste global de una imagen. 
+Se basa en redistribuir los valores de intensidad de los píxeles de modo que la imagen utilice todo el rango de niveles de gris (de 0 a 255).
+
+¿Por qué se utiliza?
+- Mejora la visualización de detalles en imágenes con bajo contraste.
+- Es útil como preprocesamiento antes de aplicar técnicas de detección de bordes u otros filtros, ya que destaca transiciones de intensidad que podrían estar "aplanadas" en la imagen original.
+
+¿Cómo funciona matemáticamente?
+
+Dada una imagen en escala de grises con intensidades r ∈ [0, L-1] (donde L = 256 en imágenes de 8 bits), 
+la ecualización se basa en aplicar una transformación de niveles de gris definida como:
+
+    s = T(r) = (L - 1) · ∫₀^r p_r(w) dw
+
+Donde:
+- p_r(r) es la función de densidad de probabilidad del nivel de gris r (obtenida del histograma normalizado).
+- T(r) es la función de transformación acumulativa (CDF, Cumulative Distribution Function).
+- s es el nuevo valor de intensidad para el píxel con valor r.
+
+Esta transformación estira las intensidades más frecuentes y expande las menos frecuentes, logrando una distribución más uniforme.
+
+¿Qué efectos tiene?
+- En imágenes oscuras o lavadas, los detalles se vuelven más visibles.
+- Aumenta la respuesta de los operadores de borde, ya que los cambios de intensidad se vuelven más marcados.
+- Puede introducir artefactos o sobrecontraste si se aplica en exceso o a imágenes que ya tienen buen contraste.
+
+¿Cuándo conviene aplicarla?
+- En imágenes con histograma concentrado en una parte del rango (ej: satelitales, escenas oscuras).
+- Antes de detectar bordes o segmentar objetos.
+
+
+
+13. Ruidos en Imágenes: Sal y Pimienta y Ruido Gaussiano
+--------------------------------------------------------
+
+En procesamiento de imágenes, los ruidos son alteraciones no deseadas que afectan los valores de intensidad de los píxeles. 
+Aparecen por errores en sensores, transmisión de datos, o condiciones ambientales. En este trabajo se utilizaron dos tipos típicos:
+
+a. Ruido Sal y Pimienta
+------------------------
+Características:
+- Se manifiesta como píxeles dispersos completamente blancos (255, "sal") o negros (0, "pimienta").
+- Es un tipo de ruido impulsivo, que altera valores individuales sin afectar zonas contiguas.
+- Muy común en imágenes escaneadas o capturadas con sensores digitales deteriorados.
+
+¿Para qué se usa?
+- Se utiliza para probar la capacidad de los algoritmos de bordes para resistir interferencias extremas.
+- Permite observar si un operador confunde ruido puntual con bordes reales.
+
+¿Por qué lo usamos?
+- Porque genera cambios bruscos artificiales que pueden activar los detectores de bordes.
+- Para evaluar qué operador (Sobel o Prewitt) es más robusto frente a este tipo de distorsión.
+
+b. Ruido Gaussiano
+------------------
+Características:
+- Agrega variaciones suaves y aleatorias a todos los píxeles de la imagen.
+- Proviene de una distribución normal (gaussiana) con cierta media (μ) y desviación estándar (σ).
+- Se percibe como un granulado generalizado.
+
+¿Para qué se usa?
+- Simula condiciones de adquisición analógica con interferencias suaves.
+- Es útil para probar la estabilidad de detectores ante ruido distribuido.
+
+¿Por qué lo usamos?
+- Porque degrada suavemente el contraste y puede hacer que los bordes reales se pierdan o sean menos intensos.
+- Para mostrar que algunos operadores pueden seguir funcionando razonablemente bien, mientras que otros se ven más afectados.
+
+Conclusión general
+------------------
+Se usan ambos tipos de ruido para:
+- Demostrar diferencias en la sensibilidad de los operadores de gradiente.
+- Justificar cuándo conviene aplicar un suavizado previo.
+- Mostrar que Prewitt es más sensible al ruido impulsivo y Sobel es más robusto en la mayoría de los casos.
+
+14. Conversión de Imágenes a Escala de Grises
+---------------------------------------------
+
+En este trabajo práctico se utilizaron imágenes en formato JPEG capturadas con un teléfono celular. 
+Estas imágenes están originalmente en color y, al ser cargadas con la librería OpenCV mediante `cv2.imread(...)`, 
+se representan internamente en formato BGR (azul, verde, rojo).
+
+Para aplicar operadores de detección de bordes como Prewitt y Sobel, es necesario convertirlas a escala de grises. 
+Esto se hace mediante:
+
+    gray = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+
+¿Por qué no se convierte primero a RGB?
+---------------------------------------
+No es necesario pasar por RGB. OpenCV usa BGR por defecto, y la función `cv2.COLOR_BGR2GRAY` ya hace la conversión adecuada 
+desde color a escala de grises directamente.
+
+Solo se convierte a RGB (con `cv2.COLOR_BGR2RGB`) si se desea mostrar la imagen en color con la librería matplotlib, 
+que sí espera imágenes en formato RGB.
+
+
+
+Conclusión:
+-----------
+La conversión directa con `cv2.COLOR_BGR2GRAY` es el procedimiento correcto, eficiente y suficiente para trabajar con imágenes 
+en color antes de aplicar detección de bordes.
+
+## Conteo de píxeles detectados como bordes
+
+Para complementar el análisis visual, realizamos un conteo de los píxeles que fueron detectados como bordes luego de aplicar los operadores de Prewitt y Sobel sobre una versión suavizada de las imágenes.
+
+### ¿Por qué suavizar antes?
+
+La suavización con un filtro Gaussiano ayuda a **reducir el ruido** en la imagen. Cuando se aplica un operador de borde como Sobel o Prewitt directamente sobre una imagen ruidosa, se pueden detectar **falsos bordes** (bordes que en realidad no existen en la escena original). Al suavizar:
+
+- Se atenúan variaciones pequeñas (como el ruido),
+- Se preservan los contornos grandes y reales.
+
+Esto **mejora la robustez del operador de borde** y da lugar a una detección más coherente.
+
+### ¿Qué representa el valor de bordes detectados?
+
+El número que se muestra en los gráficos representa la **cantidad de píxeles que superaron un cierto umbral** de intensidad en el gradiente, y por lo tanto fueron considerados parte de un borde.
+
+Este valor **no debe interpretarse como “más alto = mejor”**. De hecho:
+
+- Un valor muy alto puede indicar que se detectó mucho ruido como borde.
+- Un valor más bajo, luego de suavizar, puede significar que **los bordes reales se conservaron** y los espurios se eliminaron.
+
+Lo ideal es que haya una **relación adecuada** entre cantidad de bordes y calidad visual del resultado.
+
+
+
+Trabajo Práctico Nº 2 – Punto 3: Detección de Bordes por Gradiente
+==================================================================
+
+Esquema de exposición oral
+---------------------------
+
+Título del trabajo:
+Detección de bordes por gradiente – Prewitt y Sobel
+
+1. Introducción breve
+- Se analizan imágenes con métodos clásicos de detección de bordes: Prewitt y Sobel.
+- Se trabaja con tres imágenes: una satelital, un edificio y un rostro.
+- Se evalúa el comportamiento frente a ruido (sal y pimienta, gaussiano) y se incorporan técnicas de suavizado Gaussiano y ecualización de histograma.
+
+2. Fundamento teórico
+- Un borde es un cambio abrupto en la intensidad de la imagen, identificado mediante derivadas (gradiente).
+- Prewitt y Sobel estiman la derivada en X e Y mediante máscaras (kernels).
+- Prewitt: pesos iguales → más sensible al ruido.
+- Sobel: mayor peso al centro → más robusto.
+
+3. Aplicaciones y análisis
+a) Imagen sin ruido:
+   - Aplicación directa de Prewitt y Sobel.
+   - Sobel da bordes más definidos, Prewitt más sensible.
+
+b) Suavizado Gaussiano:
+   - Se aplica antes de detectar bordes para eliminar ruido fino.
+   - Mejora la detección al reducir bordes falsos.
+
+c) Conteo de píxeles de borde:
+   - Se binariza la imagen (umbral = 50).
+   - Se cuentan los píxeles considerados bordes para comparar métodos.
+
+d) Ruido agregado:
+   - Se aplica ruido sal y pimienta y gaussiano.
+   - Se observa el impacto en los bordes detectados.
+   - Sobel resiste mejor al ruido.
+
+e) Ecualización de histograma:
+   - Mejora el contraste visual, especialmente en imágenes con bajo contraste.
+   - Mejora la detección de bordes luego de ecualizar.
+
+4. Conclusiones
+- Sobel es más robusto y ofrece mejores resultados.
+- El suavizado y la ecualización ayudan a mejorar la detección.
+- Prewitt es más sensible al ruido.
+- El conteo de píxeles de borde permite una comparación objetiva.
+
+Preguntas posibles
+------------------
+
+1. ¿Por qué aplicaste un suavizado antes de detectar bordes?
+→ Para reducir el ruido que genera bordes falsos.
+
+2. ¿Cuál es la diferencia matemática entre Prewitt y Sobel?
+→ Sobel da más peso al centro del kernel, lo que suaviza más los resultados.
+
+3. ¿Qué representa el valor del gradiente?
+→ La magnitud del cambio de intensidad entre píxeles, es decir, qué tan fuerte es el borde.
+
+4. ¿Qué significa binarizar con un umbral de 50?
+→ Se separan bordes de fondo. Se eligió ese valor como punto medio tras pruebas visuales.
+
+5. ¿Qué hace la ecualización de histograma?
+→ Aumenta el contraste redistribuyendo los niveles de intensidad.
+
+6. ¿Qué ruido afectó más la detección de bordes?
+→ El sal y pimienta, por sus valores extremos.
+
+7. ¿Cuál imagen fue más difícil de trabajar?
+→ La satelital, por su bajo contraste original.
+
+| Técnica                 | Objetivo principal | Efecto            | Cuándo se usa             |
+| ----------------------- | ------------------ | ----------------- | ------------------------- |
+| **Suavizado Gaussiano** | Reducir ruido      | Imagen más suave  | Antes de detectar bordes  |
+| **Ecualización**        | Mejorar contraste  | Imagen más nítida | Cuando hay bajo contraste |
+
+
+
+15. Binarización y conteo de bordes
+
+Luego de aplicar un operador de bordes, muchas veces se obtiene una imagen donde los valores no son estrictamente blancos o negros, sino que indican la "fuerza" del borde.
+
+Para cuantificar la cantidad de bordes detectados, se puede:
+
+Aplicar un umbral (por ejemplo, 50) para considerar solo los bordes fuertes.
+
+Binarizar la imagen: todos los valores mayores al umbral se transforman en blanco (255), el resto en negro (0).
+
+Contar cuántos píxeles quedaron blancos: esto da una medida cuantitativa de la cantidad de bordes detectados.
+
+Este conteo:
+
+Sirve para comparar resultados entre filtros o entre versiones de una imagen (original, con ruido, suavizada).
+
+No debe interpretarse como “más bordes es mejor”, sino como una herramienta adicional.
+
+Un filtro que produce muchos bordes puede estar captando ruido; uno que produce pocos puede estar perdiendo detalles.
+
+El umbral 50 se eligió como referencia intermedia, comúnmente usada, que permite comparar resultados sin introducir demasiados falsos positivos ni perder bordes relevantes.
+
+También podrían usarse métodos de umbral adaptativo o automático (como Otsu) para este fin, pero en este caso se prefirió mantenerlo constante para análisis comparables entre imágenes.
+
